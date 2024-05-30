@@ -18,20 +18,14 @@ class VK:
         self.id = user_id
         self.version = version
 
+    #метод, который будет возварщать параметры
     def get_common_params(self):
         return {
             'access_token': self.token,
             'v': '5.236'
         }
 
-    def users_info(self):
-        url = 'https://api.vk.com/method/users.get'
-        params = self.get_common_params()
-        params.update({'user_ids': self.id})
-        response = requests.get(url, params=params)
-        print(response.url)
-        return response.json()
-
+    #метод, который будет возвращать результат обращения к фото стены
     def get_wall_photos(self):
         params = self.get_common_params()
         params.update({'album_id': 'wall','extended': '1'})
@@ -39,25 +33,26 @@ class VK:
         result = response_wall.json()
         return result
 
+    #метод, который будет возвращать результат обращения к фото профиля
     def get_photos(self):
         params = self.get_common_params()
         params.update({'album_id': 'profile','extended': '1'})
         response = requests.get(f'{self.API_BASE_URL}/photos.get', params=params)
         result = response.json()
         return result
-
+    #метод, который будет обрабатывать фото, обращаться к фото, переименовывать, формировать результирующие файлы
     def processing_photos(self,result,folder):
-        list_of_names = []
-        json_result = []
+        list_of_names = [] #создаем список, в который будем помещать имена файлов. Имя файла - это количество лайков
+        json_result = [] #сюда будем помещать информацию о фото. В нашем случае имя файла и размер
 
         # разбор результата
         count_photos = result['response']['count']  # кол-во фото в профиле
-        if count_photos > 15:
+        if count_photos > 15: #ограничим кол-во фото 15
             count_photos = 15
         print(f'Количество фото: {count_photos}')
-        for i in range(count_photos):
-            print(f'Обрабатывается фото: {i + 1} из {count_photos}')
-            photo_details = {}
+        for i in range(count_photos): #запускаем цикл дя указанного/полученного кол-ва фото
+            print(f'Обрабатывается фото: {i + 1} из {count_photos}') #некое информирование пользователя о прогрессе
+            photo_details = {} # сюда будем помещать имя файла и его размер
             photo_list = result['response']['items'][i]['sizes']  # получаем общий список фото во всех разрешениях
             number_of_likes = result['response']['items'][i]['likes']['count']  # вытаскиваем кол-во лайков, не своих
             date_of_creation = result['response']['items'][i]['date']  # вытаскиваем дату создания
@@ -65,15 +60,20 @@ class VK:
             file_name = photo_list[len(photo_list) - 1]["url"].split("/")[-1].split("?")[
                 0]  # добрался до оригинальнго имени файла
             file_size = photo_list[len(photo_list) - 1]["url"].split("/")[-1].split("?")[1].split("&")[0].split("=")[
-                1]  # добрался до оригинальнго имени файла
+                1]  # добрался до размера файла
+            # переменная, которая будет сожержать имя файла, состоящего из кол-ва лайков
+            # и расширения оригинального имени файла
             file_name_to_save = str(number_of_likes) + file_name[-4:]
+            # проверяем, существует ли уже такое имя файла в наем списке имен,
+            # и если уже существует, то приписываем к нему дату создания
             if file_name_to_save in list_of_names:
                 file_name_to_save = f'{str(number_of_likes)}_{str(date_of_creation)}{file_name[-4:]}'
+            # добавление имени файла в список имен файлов для имения возможности сравнить на следующей итерации
             list_of_names.append(file_name_to_save)
-            photo_details.setdefault("file_name", file_name_to_save)
-            photo_details.setdefault("size", file_size)
-            json_result.append(photo_details)
-            response_1 = requests.get(link)
+            photo_details.setdefault("file_name", file_name_to_save) #добавялем в словарь информацию о имени файла
+            photo_details.setdefault("size", file_size) #добавялем в словарь информацию о размере файла
+            json_result.append(photo_details) #добавляем информацию в общий файл- результат
+            response_1 = requests.get(link) #передаем ссылку с максимальным разрешением фото для получения результата
 
             # сохранения фото в макс разрешении с именем кол-во лайков на локальный диск
             #if response_1.status_code == 200:
@@ -81,12 +81,13 @@ class VK:
             #        f.write(response_1.content)
 
             # сохранения фото в макс разрешении с именем кол-во лайков на диск яндекс
+            # если успешно, то вызываем метод сохранения файла на Яндекс диск, в который передаем ссылку, имя файла и имя папки
             if response_1.status_code == 200:
                 vk.file_saving(link, file_name_to_save,folder)
 
         return json_result
 
-    #метод создания папки на Яндекс диск
+    #метод создания папки на Яндекс диск для хранения фото из профиля
     def yandex_folder_creation(self,folder):
         yandex_params = {'path': folder}
         headers = {'Authorization': yandex_polygon_token}
@@ -95,6 +96,7 @@ class VK:
                                        headers=headers)
         return yandex_response.status_code
 
+    # метод создания папки на Яндекс диск для хранения фото со стены
     def yandex_wall_folder_creation(self,folder):
         yandex_params = {'path': folder}
         headers = {'Authorization': yandex_polygon_token}
@@ -103,6 +105,7 @@ class VK:
                                        headers=headers)
         return yandex_wall_response.status_code
 
+    #метод сохранения фото на Яндекс диске
     def file_saving(self, link, file_name,folder):
         #yandex_params = {'path': f'VKProfilePhotos/{file_name}'}
         yandex_params = {'path': f'{folder}/{file_name}'}
@@ -112,25 +115,29 @@ class VK:
                                          params=yandex_params,
                                          headers=headers)
 
-
 if __name__ == '__main__':
     vk = VK(access_token, user_id)
+    #предоставляем возможность пользователю выбрать откуда сохранить фото: 0 - Из профиля, 1 - Cо стены
     place_selection = int(input('Укажите откуда взять фото для копирования: 0 - Profile, 1 - Wall\n'))
-
-    #сначала создадим папку на яндекс диске вызвав метод создания
+    #в зависимости от того, что ввел пользователь - 0 или 1, выполняем код
     if place_selection == 0:
+        # сначала создадим папку на яндекс диске вызвав метод создания
+        # если папка успешно создана, вызываем метод получения фото с VK профиля
+        # и помещаем результат выполенения в переменную result
         if vk.yandex_folder_creation('VKProfilePhotos') == 201:
             result = vk.get_photos()
+            #по окончании выполнения перемещения фото с VK на Яндекс, записываем в файл информацию
+            # о результате выполнения метода processing_photos
             with open('vk_to_yandex_profile.json', 'w+') as f:
                 f.write(json.dumps(vk.processing_photos(result,'VKProfilePhotos'), indent=2))
-#                processing_photos
-#                f.write(json.dumps(vk.get_photos(), indent=2))
             print("Обработка завершена")
-        elif vk.yandex_folder_creation('VKProfilePhotos') == 409:
+        elif vk.yandex_folder_creation('VKProfilePhotos') == 409: # если папка уже существует - информируем
+            # пользователя и не предпринимаем никаких действий
             print(f'Ошибка {vk.yandex_folder_creation("VKProfilePhotos")}: Папка с таким именем уже существует')
         else:
             print('Неизвестная ошибка')
     else:
+        #выполняем те же проверки и действия в случае выбора пользователем 1 - Wall
         if vk.yandex_wall_folder_creation('VKWallPhotos') == 201:
             result = vk.get_wall_photos()
             with open('vk_to_yandex_wall.json', 'w+') as f:
