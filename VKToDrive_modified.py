@@ -65,7 +65,10 @@ class VK:
                 file_width = images['width'] #получаем ширину изображения
                 #сравниваем полученные значения, и если условие выполняется, 
                 #то вытаскиваем ссылку для последующего запроса, а также типоразмер изображения
-                if file_height > max_file_height and file_width > max_file_width:
+                if file_height == 0 and file_width == 0:
+                    link = images['url']  # получаем только ссылку
+                    file_size = images['type']
+                elif file_height > max_file_height and file_width > max_file_width:
                     max_file_height = file_height
                     max_file_width = file_width
                     link = images['url']  # получаем только ссылку
