@@ -8,7 +8,7 @@ class YNDX:
         self.ya_headers = {'Authorization': self.ya_token}
 
     # метод создания папки на Яндекс диск для хранения фото
-    def yandex_folder_creation(self,folder):
+    def create_yandex_folder(self,folder):
         yandex_params = {'path': folder}
         #headers = {'Authorization': self.ya_token}
         yandex_response = requests.put(f'{self.YANDEX_DRIVE_URL}/resources',
@@ -17,7 +17,7 @@ class YNDX:
         return yandex_response.status_code
 
     #метод сохранения фото на Яндекс диске
-    def file_saving(self, link, file_name,folder):
+    def save_files(self, link, file_name,folder):
         #yandex_params = {'path': f'VKProfilePhotos/{file_name}'}
         yandex_params = {'path': f'{folder}/{file_name}'}
         yandex_params.update({'url': link})

@@ -10,7 +10,7 @@ import classYNDX
 Функция обработки фото, которая прнимает на вход результат выполнения метода get_photos и название папки
 и возвращает в качестве результата список фотографий, состоящий из словарей с ключами file_name, которое формируется
 из полученных кол-ва лайков и типоразмера фото, которое будет иметь максимальные высоту и ширину в пикселях'''
-def processing_photos(result,folder):
+def process_photos(result,folder):
     list_of_names = [] #создаем список, в который будем помещать имена файлов. Имя файла - это количество лайков
     json_result = [] #сюда будем помещать информацию о фото. В нашем случае имя файла и размер
 
@@ -65,7 +65,7 @@ def processing_photos(result,folder):
         # сохранения фото в макс разрешении с именем кол-во лайков на диск яндекс
         # если успешно, то вызываем метод сохранения файла на Яндекс диск, в который передаем ссылку, имя файла и имя папки
         if response_img_url.status_code == 200:
-            yndx.file_saving(link, file_name_to_save,folder)
+            yndx.save_files(link, file_name_to_save,folder)
 
     return json_result
 
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     #запрашиваем общедоступное ИД пользователя, у которого нужно скопировать фото
     user_id = input('Укажите ИД пользователя в VK:\n')
 
-    vk = classVK.VK(access_token, user_id)
+    vk = classVK.VK(access_token)
     yndx = classYNDX.YNDX(yandex_polygon_token)
 
     #предоставляем возможность пользователю выбрать откуда сохранить фото: 0 - Из профиля, 1 - Cо стены
@@ -96,21 +96,21 @@ if __name__ == '__main__':
         # сначала создадим папку на яндекс диске вызвав метод создания
         # если папка успешно создана, вызываем метод получения фото с VK профиля
         # и помещаем результат выполенения в переменную result
-        if yndx.yandex_folder_creation(folder_profile) == 201 or yndx.yandex_folder_creation(folder_profile) == 409:
-            result = vk.get_photos('profile')
+        if yndx.create_yandex_folder(folder_profile) == 201 or yndx.create_yandex_folder(folder_profile) == 409:
+            result = vk.get_photos('profile', user_id)
             #по окончании выполнения перемещения фото с VK на Яндекс, записываем в файл информацию
             # о результате выполнения метода processing_photos
             with open('../vk_to_yandex_profile.json', 'w+') as f:
-                f.write(json.dumps(processing_photos(result,folder_profile), indent=2))
+                f.write(json.dumps(process_photos(result,folder_profile), indent=2))
             print("Обработка завершена")
         else:
             print('Неизвестная ошибка')
     else:
         #выполняем те же проверки и действия в случае выбора пользователем 1 - Wall
-        if yndx.yandex_folder_creation(folder_wall) == 201 or yndx.yandex_folder_creation(folder_wall) == 409:
+        if yndx.create_yandex_folder(folder_wall) == 201 or yndx.create_yandex_folder(folder_wall) == 409:
             result = vk.get_photos('wall')
             with open('../vk_to_yandex_wall.json', 'w+') as f:
-                f.write(json.dumps(processing_photos(result,folder_wall), indent=2))
+                f.write(json.dumps(process_photos(result,folder_wall), indent=2))
             print("Обработка завершена")
         else:
             print('Неизвестная ошибка')
